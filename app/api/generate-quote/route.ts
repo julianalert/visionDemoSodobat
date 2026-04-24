@@ -93,23 +93,31 @@ TARIFS UNITAIRES DE RÉFÉRENCE (mis à jour T1 2024)
 - Bungalow base vie / mois : 350–550€/mois
 
 CONDITIONS GÉNÉRALES SODOBAT
+- Raison sociale : SODOBAT — Soc Donat de Bâtiment
+- SIRET : 333 940 203 — Active
+- Adresse : 103 Allée Sébastien Vauban, 83600 Fréjus
+- Activité : Construction d'autres bâtiments
 - Acompte : 30% à la commande
 - Paiements échelonnés : sur situations mensuelles
 - Validité devis : 60 jours
-- Assurance décennale : AXA – Police n°FR-BTP-2019-SDG-447
-- Garanties : parfait achèvement 1 an, bon fonctionnement 2 ans, décennale 10 ans
 `;
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { clientName, clientEmail, location, typeLabel, desc } = body;
+    const { message, clientName, clientEmail, location, typeLabel, desc } = body;
+
+    const userContent = message
+      ? `BASE HISTORIQUE:\n${HISTORICAL_DB}\n\nDEMANDE CLIENT (texte libre — extraire toutes les informations nécessaires):\n${message}\n\nGénère le devis complet.`
+      : `BASE HISTORIQUE:\n${HISTORICAL_DB}\n\nDEMANDE CLIENT:\nClient: ${clientName} (${clientEmail})\nType: ${typeLabel}\nLocalisation: ${location}\nDescription: ${desc}\n\nGénère le devis complet.`;
 
     const response = await client.messages.create({
       model: "claude-sonnet-4-5",
       max_tokens: 4000,
-      system: `Tu es un expert deviseur BTP pour le Groupe SDG (SODOBAT, ADSO, EASYMAT, EASY HOME, EASY INGENIERIE) en France.
+      system: `Tu es un expert deviseur BTP pour SODOBAT (Soc Donat de Bâtiment), entreprise basée à Fréjus (Var, 83600), spécialisée dans la construction dans le département du Var.
 Tu génères des devis professionnels précis et réalistes, basés sur la base de données historique fournie.
+Si le message client est en texte libre, extrais toi-même le nom client, email, type de projet, localisation et délai.
+IMPORTANT : tous les chantiers sont situés dans le Var, autour de Fréjus et Saint-Raphaël, dans un rayon de 50km maximum (Draguignan, Sainte-Maxime, Saint-Tropez, Roquebrune-sur-Argens, Le Muy, Les Arcs-sur-Argens, Puget-sur-Argens, Vidauban, Grimaud, Cogolin, etc.). Si une localisation hors de cette zone est mentionnée, utilise la ville varoise la plus pertinente.
 
 IMPORTANT: Réponds UNIQUEMENT avec du JSON brut valide. Aucun texte avant ou après. Aucun backtick. Aucun markdown. Commence directement par { et termine par }.
 
@@ -158,11 +166,11 @@ Structure exacte à respecter:
   "note": "Remarque importante"
 }
 
-Génère 2 à 3 lots maximum avec 2 à 4 lignes chacun. Prix réalistes marché BTP 2024. totalHT = somme exacte de tous les total des lignes. totalTTC = totalHT * 1.10 (arrondi).`,
+Génère 2 à 3 lots maximum avec 2 à 4 lignes chacun. Prix réalistes marché BTP 2024. totalHT = somme exacte de tous les total des lignes. totalTTC = totalHT * (1 + tva/100) arrondi.`,
       messages: [
         {
           role: "user",
-          content: `BASE HISTORIQUE:\n${HISTORICAL_DB}\n\nDEMANDE CLIENT:\nClient: ${clientName} (${clientEmail})\nType: ${typeLabel}\nLocalisation: ${location}\nDescription: ${desc}\n\nGénère le devis complet.`,
+          content: userContent,
         },
       ],
     });
